@@ -9,8 +9,6 @@ const NAV = [
   { href: '/',            label: 'Home' },
   { href: '/setup',       label: 'Solo Quiz' },
   { href: '/practice',    label: '📚 Practice' },
-  { href: '/room',        label: '🎮 Host Room' },
-  { href: '/join',        label: '🙋 Join' },
   { href: '/leaderboard', label: 'Leaderboard' },
   { href: '/admin',       label: '⚙ Admin' },
 ]
@@ -25,8 +23,8 @@ export default function Header() {
       <Link href="/" className={styles.brand}>
         <div className={styles.logoRing}>
           <Image
-            src="/logo.jpeg"
-            alt="Seat of Wisdom"
+            src="/logo.jpg"
+            alt="BEKA Academy"
             width={48}
             height={48}
             className={styles.logoImg}
@@ -34,8 +32,8 @@ export default function Header() {
           />
         </div>
         <div className={styles.brandText}>
-          <span className={styles.schoolName}>Seat of Wisdom Group of Schools</span>
-          <span className={styles.quizBadge}>Quiz Championship</span>
+          <span className={styles.schoolName}>BEKA Academy</span>
+          <span className={styles.quizBadge}>Spelling Bee Championship</span>
         </div>
       </Link>
 

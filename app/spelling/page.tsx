@@ -40,7 +40,7 @@ export default function SpellingLobbyPage() {
       <div className={styles.header}>
         <div className={styles.headerIcon}>🔤</div>
         <h1 className={styles.title}>SPELLING BEE</h1>
-        <p className={styles.subtitle}>SOW Quiz Championship</p>
+        <p className={styles.subtitle}>BEKA Academy Spelling Bee Championship</p>
         <p className={styles.tagline}>Hear the word · Spell it right · Beat the clock</p>
       </div>
 

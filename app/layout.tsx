@@ -7,9 +7,9 @@ import Header from '../components/layout/Header'
 import StarsBg from '../components/layout/StarsBg'
 
 export const metadata: Metadata = {
-  title: 'Quiz Championship — Seat of Wisdom Group of Schools',
-  description: 'School quiz competition platform for Seat of Wisdom Group of Schools',
-  icons: { icon: '/logo.jpeg' },
+  title: 'BEKA Academy Spelling Bee Championship',
+  description: 'Spelling Bee competition platform for BEKA Academy',
+  icons: { icon: '/logo.jpg' },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

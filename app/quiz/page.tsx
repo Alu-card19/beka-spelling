@@ -1,8 +1,7 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGame } from '../../context/GameContext'
-import { supabase } from '../../lib/supabase'
 import ScoreBoard from '../../components/quiz/ScoreBoard'
 import Round1Grid from '../../components/quiz/Round1Grid'
 import Round2FastFingers from '../../components/quiz/Round2FastFingers'
@@ -29,13 +28,11 @@ export default function QuizPage() {
   const [timerSeconds, setTimerSeconds] = useState<number | undefined>(undefined)
   const [timerInput, setTimerInput] = useState(30)
   const [sessionRestored, setSessionRestored] = useState(false)
-  const [linkCopied, setLinkCopied] = useState(false)
-  const realtimeChannelRef = useRef<any>(null)
 
   // Check if session was restored from localStorage
   useEffect(() => {
     if (game.started && typeof window !== 'undefined') {
-      const saved = localStorage.getItem('sow_game_state')
+      const saved = localStorage.getItem('beka_game_state')
       if (saved) {
         try {
           const parsed = JSON.parse(saved)
@@ -50,82 +47,6 @@ export default function QuizPage() {
       }
     }
   }, [game.started])
-
-  // Realtime broadcast setup
-  useEffect(() => {
-    if (!game.sessionId || !game.started) return
-
-    const channel = supabase.channel(`solo:${game.sessionId}`)
-    realtimeChannelRef.current = channel
-
-    channel
-      .on('broadcast', { event: 'any' }, (payload) => {
-        // Listeners set up, channel is ready
-      })
-      .subscribe()
-
-    return () => {
-      channel.unsubscribe()
-    }
-  }, [game.sessionId, game.started])
-
-  // Broadcast quiz started event
-  useEffect(() => {
-    if (!game.sessionId || !game.started || !realtimeChannelRef.current) return
-
-    const channel = realtimeChannelRef.current
-    channel.send({
-      type: 'broadcast',
-      event: 'quiz_started',
-      payload: {
-        section: game.section,
-        teams: game.teams.map(t => ({ name: t.name, color: t.color })),
-        totalQuestions: 20,
-        startedAt: new Date().toISOString(),
-      },
-    })
-  }, [game.started])
-
-  // Broadcast round change
-  useEffect(() => {
-    if (!game.sessionId || !realtimeChannelRef.current) return
-
-    const channel = realtimeChannelRef.current
-    channel.send({
-      type: 'broadcast',
-      event: 'round_change',
-      payload: {
-        round: game.round,
-        roundName: roundNames[game.round],
-      },
-    })
-  }, [game.round, game.sessionId])
-
-  // Broadcast scores
-  useEffect(() => {
-    if (!game.sessionId || !realtimeChannelRef.current) return
-
-    const channel = realtimeChannelRef.current
-    channel.send({
-      type: 'broadcast',
-      event: 'scores',
-      payload: {
-        scores: game.teams.map(t => ({
-          name: t.name,
-          color: t.color,
-          score: game.scores[t.name] || 0,
-        })),
-      },
-    })
-  }, [game.scores, game.sessionId])
-
-  const copyShareLink = () => {
-    if (!game.sessionId) return
-    const link = `${typeof window !== 'undefined' ? window.location.origin : ''}/watch/${game.sessionId}`
-    navigator.clipboard.writeText(link)
-    setLinkCopied(true)
-    setTimeout(() => setLinkCopied(false), 2000)
-  }
 
   if (!game.started) {
     return (
@@ -154,7 +75,7 @@ export default function QuizPage() {
       `winner=${encodeURIComponent(team.name)}&` +
       `score=${team.score}&` +
       `section=${encodeURIComponent(game.section ?? '')}&` +
-      `category=Quiz Championship&` +
+      `category=Spelling Bee Championship&` +
       `position=${encodeURIComponent(posLabel)}&` +
       `date=${encodeURIComponent(date)}` +
       photoParam
@@ -330,14 +251,6 @@ export default function QuizPage() {
               The Gauntlet
             </button>
           </div>
-          <button 
-            className="btn btn-ghost btn-sm"
-            onClick={copyShareLink}
-            style={{ borderColor: '#00e5ff', color: '#00e5ff' }}
-            title="Copy spectator link to clipboard"
-          >
-            {linkCopied ? '✅ Link Copied!' : '🔗 Share Live Link'}
-          </button>
           <button className="btn btn-danger btn-sm" onClick={() => setShowEndScreen(true)}>
             🏁 End Quiz
           </button>

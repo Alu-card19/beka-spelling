@@ -1,5 +1,5 @@
 /**
- * SOW Spelling Bee — Speech Utility
+ * BEKA Academy Spelling Bee — Speech Utility
  *
  * Core principle: speak the word ONCE per utterance, with NO repetition
  * in the same string. Repeating the word (either in one string or across
@@ -14,7 +14,7 @@
  * rather than queuing a second one.
  */
 
-const VOICE_KEY = 'sow-spelling-voice'
+const VOICE_KEY = 'beka-spelling-voice'
 
 export function savePreferredVoice(voiceName: string): void {
   if (typeof window === 'undefined') return

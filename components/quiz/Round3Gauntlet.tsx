@@ -21,7 +21,7 @@ const STAGE_COLORS: Record<Stage, string> = {
   easy: '#00e676',
   moderate: '#FFD700',
   hard: '#FF6D00',
-  champion: '#C8102E',
+  champion: '#8B5CF6',
 }
 
 const STAGE_LABELS: Record<Stage, string> = {
@@ -235,7 +235,7 @@ export default function Round3Gauntlet() {
               </div>
             ))}
           </div>
-          <div className={styles.categoryLabel}>{category ? `${CATEGORY_ICONS[category as 'Maths' | 'Spelling Bee' | 'General Knowledge']} ${category}` : ''}</div>
+          <div className={styles.categoryLabel}>🐝 Spelling Bee</div>
           <div className={styles.participantLabel} style={{ color: '#00e5ff' }}>👥 {participants}</div>
         </div>
 
@@ -256,34 +256,27 @@ export default function Round3Gauntlet() {
           ) : (
             <>
               <div className={styles.qCat}>
-                {current.category === 'Maths' ? '📐' : current.category === 'Spelling Bee' ? '🐝' : '🌍'}
-                &nbsp;{current.category}
+                🐝 Spelling Bee
               </div>
-              {current.category === 'Spelling Bee' ? (
-                <div className={styles.spellingWrap}>
-                  <p className={styles.spellingLabel}>Spell the word:</p>
-                  <div className={`${styles.spellingWord} ${revealed ? styles.unblurred : ''}`}>
-                    {current.question}
-                  </div>
-                  {!revealed && <p className={styles.blurHint}>👆 Hidden — use audio for contestants</p>}
+              <div className={styles.spellingWrap}>
+                <p className={styles.spellingLabel}>Spell the word:</p>
+                <div className={`${styles.spellingWord} ${revealed ? styles.unblurred : ''}`}>
+                  {current.question}
                 </div>
-              ) : (
-                <p className={styles.qText}>{current.question}</p>
-              )}
-              {current.category === 'Spelling Bee' && (
-                <button
-                  className={styles.audioBtn}
-                  onClick={() => {
-                    if (!window.speechSynthesis) return
-                    window.speechSynthesis.cancel()
-                    const u = new SpeechSynthesisUtterance(current.question)
-                    u.rate = 0.75
-                    window.speechSynthesis.speak(u)
-                  }}
-                >
-                  🔊 Hear the Word
-                </button>
-              )}
+                {!revealed && <p className={styles.blurHint}>👆 Hidden — use audio for contestants</p>}
+              </div>
+              <button
+                className={styles.audioBtn}
+                onClick={() => {
+                  if (!window.speechSynthesis) return
+                  window.speechSynthesis.cancel()
+                  const u = new SpeechSynthesisUtterance(current.question)
+                  u.rate = 0.75
+                  window.speechSynthesis.speak(u)
+                }}
+              >
+                🔊 Hear the Word
+              </button>
               {current.hint && (
                 <div className={styles.hintBox}>
                   💡 Hint: {current.hint}

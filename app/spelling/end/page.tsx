@@ -2,15 +2,15 @@
 
 /**
  * /spelling/end — End screen.
- * Shows final score, streak, accuracy.
- * Saves score to spelling_scores table.
+ * Shows final score, percentage.
+ * Saves score to localStorage.
  * Options: download certificate, view leaderboard, play again.
  */
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
+import { saveSpellingScore } from '@/lib/db'
 import styles from './page.module.css'
 
 export default function SpellingEndPage() {
@@ -18,46 +18,49 @@ export default function SpellingEndPage() {
 
   const [playerName, setPlayerName] = useState('')
   const [section,    setSection]    = useState('')
+  const [category,   setCategory]   = useState('')
   const [score,      setScore]      = useState(0)
-  const [streak,     setStreak]     = useState(0)
-  const [accuracy,   setAccuracy]   = useState(0)
-  const [correct,    setCorrect]    = useState(0)
+  const [total,      setTotal]      = useState(0)
+  const [percentage, setPercentage] = useState(0)
   const [saved,      setSaved]      = useState(false)
 
   useEffect(() => {
     const name = sessionStorage.getItem('spelling_player') ?? ''
     const sec  = sessionStorage.getItem('spelling_section') ?? ''
-    const sc   = parseInt(sessionStorage.getItem('spelling_score')    ?? '0')
-    const st   = parseInt(sessionStorage.getItem('spelling_streak')   ?? '0')
-    const ac   = parseInt(sessionStorage.getItem('spelling_accuracy') ?? '0')
-    const co   = parseInt(sessionStorage.getItem('spelling_correct')  ?? '0')
+    const cat  = sessionStorage.getItem('spelling_category') ?? 'Spelling Bee'
+    const sc   = parseInt(sessionStorage.getItem('spelling_score')  ?? '0')
+    const tot  = parseInt(sessionStorage.getItem('spelling_total')  ?? '0')
+    const pct  = parseInt(sessionStorage.getItem('spelling_percent') ?? '0')
 
     if (!name) { router.replace('/spelling'); return }
 
     setPlayerName(name)
     setSection(sec)
+    setCategory(cat)
     setScore(sc)
-    setStreak(st)
-    setAccuracy(ac)
-    setCorrect(co)
+    setTotal(tot)
+    setPercentage(pct)
 
-    saveScore(name, sec, sc, st, ac)
+    saveScore(name, sec, cat, sc, tot, pct)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  async function saveScore(name: string, sec: string, sc: number, st: number, ac: number) {
-    await supabase.from('spelling_scores').insert({
+  async function saveScore(name: string, sec: string, cat: string, sc: number, tot: number, pct: number) {
+    await saveSpellingScore({
       player_name: name,
       section: sec,
+      category: cat,
       score: sc,
-      streak: st,
-      accuracy: ac,
+      total: tot,
+      percentage: pct,
     })
     setSaved(true)
   }
 
   function handlePlayAgain() {
     sessionStorage.removeItem('spelling_score')
+    sessionStorage.removeItem('spelling_total')
+    sessionStorage.removeItem('spelling_percent')
     sessionStorage.removeItem('spelling_streak')
     sessionStorage.removeItem('spelling_accuracy')
     sessionStorage.removeItem('spelling_correct')
@@ -76,9 +79,11 @@ export default function SpellingEndPage() {
     router.push(`/certificate?${params.toString()}`)
   }
 
-  const grade      = accuracy >= 90 ? 'S' : accuracy >= 70 ? 'A' : accuracy >= 50 ? 'B' : accuracy >= 30 ? 'C' : 'D'
-  const gradeColor = accuracy >= 90 ? 'var(--gold)' : accuracy >= 70 ? 'var(--green)' : accuracy >= 50 ? 'var(--cyan)' : accuracy >= 30 ? '#FFA500' : 'var(--red)'
-  const emoji      = accuracy >= 70 ? '🏆' : accuracy >= 40 ? '🎯' : '💪'
+  const grade      = percentage >= 90 ? 'S' : percentage >= 70 ? 'A' : percentage >= 50 ? 'B' : percentage >= 30 ? 'C' : 'D'
+  const gradeColor = percentage >= 90 ? 'var(--gold)' : percentage >= 70 ? 'var(--green)' : percentage >= 50 ? 'var(--cyan)' : percentage >= 30 ? '#FFA500' : 'var(--red)'
+  const emoji      = percentage >= 70 ? '🏆' : percentage >= 40 ? '🎯' : '💪'
+  const streak     = 0  // Not tracked in this simplified version
+  const correct    = score
 
   return (
     <div className={styles.page}>
@@ -113,7 +118,7 @@ export default function SpellingEndPage() {
             <span className={styles.statLbl}>Best Streak</span>
           </div>
           <div className={styles.statItem}>
-            <span className={styles.statNum} style={{ color: 'var(--cyan)' }}>{accuracy}%</span>
+            <span className={styles.statNum} style={{ color: 'var(--cyan)' }}>{percentage}%</span>
             <span className={styles.statLbl}>Accuracy</span>
           </div>
         </div>

@@ -1,34 +1,19 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
+import * as db from '../../lib/db'
 import {
-  getQuestions, addQuestion, deleteQuestion,
-  SECTIONS, CATEGORIES, CATEGORY_ICONS, Question, Section, Category
+  SECTIONS, CATEGORIES, CATEGORY_ICONS, Section, Category
 } from '../../lib/questions'
-import {
-  getAllPracticeQuestions, addPracticeQuestion, deletePracticeQuestion,
-  PracticeQuestion
-} from '../../lib/practice'
 import { useToast } from '../../context/ToastContext'
-import { supabase } from '../../lib/supabase'
 import styles from './page.module.css'
 import VoicePicker from '../../components/ui/VoicePicker'
 
-const ADMIN_PASSWORD = 'sow2025'
+const ADMIN_PASSWORD = 'beka2025'
 type AdminTab = 'quiz' | 'practice' | 'spelling' | 'settings'
-
-// ── Spelling word types ──
-interface SpellingWord {
-  id: string
-  word: string
-  section: string
-  hint: string | null
-  audio_url: string | null
-  created_at: string
-}
 
 // ── Spelling Words Tab ──────────────────────────────────────────────────────
 function SpellingWordsTab({ showToast }: { showToast: (msg: string, type: 'success' | 'error') => void }) {
-  const [words,       setWords]       = useState<SpellingWord[]>([])
+  const [words,       setWords]       = useState<db.SpellingWord[]>([])
   const [loading,     setLoading]     = useState(false)
   const [section,     setSection]     = useState<string>(SECTIONS[0])
   const [newWord,     setNewWord]     = useState('')
@@ -40,118 +25,66 @@ function SpellingWordsTab({ showToast }: { showToast: (msg: string, type: 'succe
   const [csvParsed,   setCsvParsed]   = useState<{ word: string; hint: string }[]>([])
   const [csvImporting,setCsvImporting]= useState(false)
   const [showCsv,     setShowCsv]     = useState(false)
-  const [audioFilter, setAudioFilter] = useState<'all' | 'has' | 'no'>('all')
-  const [uploadingWordId, setUploadingWordId] = useState<string | null>(null)
   const csvFileRef = useRef<HTMLInputElement>(null)
-  const audioFileRef = useRef<HTMLInputElement>(null)
 
   const loadWords = useCallback(async () => {
     setLoading(true)
-    const { data } = await supabase
-      .from('spelling_words')
-      .select('*')
-      .eq('section', section)
-      .order('word', { ascending: true })
-    setWords((data ?? []) as SpellingWord[])
-    setLoading(false)
-  }, [section])
+    try {
+      const words = await db.getSpellingWords(section)
+      setWords(words)
+    } catch {
+      showToast('Error loading', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }, [section, showToast])
 
   useEffect(() => { loadWords() }, [loadWords])
-
-  const filteredWords = words.filter(w => {
-    if (audioFilter === 'has') return w.audio_url
-    if (audioFilter === 'no') return !w.audio_url
-    return true
-  })
 
   async function handleAdd() {
     if (!newWord.trim()) { showToast('Enter a word', 'error'); return }
     setSaving(true)
-    const { error } = await supabase.from('spelling_words').insert({
-      word: newWord.trim().toUpperCase(),
-      section,
-      hint: newHint.trim() || null,
-    })
-    if (error) { showToast('Error adding word', 'error') }
-    else { showToast('Word added!', 'success'); setNewWord(''); setNewHint(''); loadWords() }
-    setSaving(false)
+    try {
+      await db.addSpellingWord({
+        word: newWord.trim().toUpperCase(),
+        section,
+        hint: newHint.trim() || undefined,
+      })
+      showToast('Word added!', 'success')
+      setNewWord('')
+      setNewHint('')
+      loadWords()
+    } catch {
+      showToast('Error adding word', 'error')
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleDelete(id: string) {
     if (!confirm('Delete this word?')) return
-    const { error } = await supabase.from('spelling_words').delete().eq('id', id)
-    if (error) showToast('Error deleting', 'error')
-    else { showToast('Deleted', 'success'); loadWords() }
+    try {
+      await db.deleteSpellingWord(id)
+      showToast('Deleted', 'success')
+      loadWords()
+    } catch {
+      showToast('Error deleting', 'error')
+    }
   }
 
-  function startEdit(w: SpellingWord) {
+  function startEdit(w: db.SpellingWord) {
     setEditingId(w.id)
     setEditVal({ word: w.word, hint: w.hint ?? '' })
   }
 
   async function saveEdit(id: string) {
-    const { error } = await supabase.from('spelling_words').update({
-      word: editVal.word.trim().toUpperCase(),
-      hint: editVal.hint.trim() || null,
-    }).eq('id', id)
-    if (error) showToast('Error updating', 'error')
-    else { showToast('Updated!', 'success'); setEditingId(null); loadWords() }
-  }
-
-  async function handleAudioUpload(wordId: string, file: File | null) {
-    if (!file) return
-    
-    const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp4']
-    if (!allowedTypes.includes(file.type)) {
-      showToast('Invalid file type. Use MP3, WAV, OGG, or M4A', 'error')
-      return
-    }
-
-    setUploadingWordId(wordId)
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('wordId', wordId)
-      formData.append('section', section)
-
-      const response = await fetch('/api/spelling-audio', {
-        method: 'POST',
-        headers: { 'x-admin-password': 'sow2025' },
-        body: formData,
-      })
-
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Upload failed')
-      
-      showToast('✅ Audio uploaded!', 'success')
+      await db.updateSpellingWord(id, editVal.word.trim().toUpperCase(), editVal.hint.trim() || null)
+      showToast('Updated!', 'success')
+      setEditingId(null)
       loadWords()
-    } catch (err: any) {
-      showToast(err.message || 'Upload failed', 'error')
-    } finally {
-      setUploadingWordId(null)
-    }
-  }
-
-  async function handleRemoveAudio(wordId: string, filePath: string) {
-    if (!confirm('Remove this audio recording?')) return
-    
-    try {
-      const response = await fetch('/api/spelling-audio', {
-        method: 'DELETE',
-        headers: {
-          'x-admin-password': 'sow2025',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ wordId, filePath }),
-      })
-
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Delete failed')
-      
-      showToast('✅ Audio removed!', 'success')
-      loadWords()
-    } catch (err: any) {
-      showToast(err.message || 'Delete failed', 'error')
+    } catch {
+      showToast('Error updating', 'error')
     }
   }
 
@@ -182,11 +115,19 @@ function SpellingWordsTab({ showToast }: { showToast: (msg: string, type: 'succe
   async function handleImportCsv() {
     if (!csvParsed.length) return
     setCsvImporting(true)
-    const rows = csvParsed.map(r => ({ word: r.word, section, hint: r.hint || null }))
-    const { error } = await supabase.from('spelling_words').insert(rows)
-    if (error) showToast('Import failed', 'error')
-    else { showToast(`✅ Imported ${rows.length} words!`, 'success'); setCsvText(''); setCsvParsed([]); setShowCsv(false); loadWords() }
-    setCsvImporting(false)
+    try {
+      const rows = csvParsed.map(r => ({ word: r.word, section, hint: r.hint || null }))
+      await db.bulkInsertSpellingWords(rows)
+      showToast(`✅ Imported ${rows.length} words!`, 'success')
+      setCsvText('')
+      setCsvParsed([])
+      setShowCsv(false)
+      loadWords()
+    } catch {
+      showToast('Import failed', 'error')
+    } finally {
+      setCsvImporting(false)
+    }
   }
 
   return (
@@ -248,33 +189,13 @@ function SpellingWordsTab({ showToast }: { showToast: (msg: string, type: 'succe
 
       {/* Audio filter */}
       <div style={{ marginBottom: 16, display: 'flex', gap: 8, alignItems: 'center' }}>
-        <span style={{ fontSize: '0.9rem', color: 'var(--text2)', fontWeight: 500 }}>Filter:</span>
-        <button
-          className={`btn btn-sm ${audioFilter === 'all' ? 'btn-primary' : 'btn-ghost'}`}
-          onClick={() => setAudioFilter('all')}
-        >
-          All
-        </button>
-        <button
-          className={`btn btn-sm ${audioFilter === 'has' ? 'btn-primary' : 'btn-ghost'}`}
-          onClick={() => setAudioFilter('has')}
-        >
-          🎵 Has Audio
-        </button>
-        <button
-          className={`btn btn-sm ${audioFilter === 'no' ? 'btn-primary' : 'btn-ghost'}`}
-          onClick={() => setAudioFilter('no')}
-        >
-          🔇 No Audio
-        </button>
       </div>
 
       {/* Word list */}
       <div className={styles.list}>
         {loading ? <p className={styles.listEmpty}>Loading…</p>
           : words.length === 0 ? <p className={styles.listEmpty}>No words yet for this section.</p>
-          : filteredWords.length === 0 ? <p className={styles.listEmpty}>No words match the selected filter.</p>
-          : filteredWords.map((w, i) => (
+          : words.map((w, i) => (
             <div key={w.id} className={styles.item}>
               {editingId === w.id ? (
                 <div className={styles.editForm}>
@@ -282,56 +203,6 @@ function SpellingWordsTab({ showToast }: { showToast: (msg: string, type: 'succe
                     onChange={e => setEditVal(v => ({ ...v, word: e.target.value }))} placeholder="Word" />
                   <input className={styles.editInput} value={editVal.hint}
                     onChange={e => setEditVal(v => ({ ...v, hint: e.target.value }))} placeholder="Hint (optional)" />
-                  
-                  {/* Audio Recording Section */}
-                  <div style={{
-                    marginTop: 12,
-                    padding: '12px',
-                    border: '1px solid #00e5ff',
-                    borderRadius: 'var(--radius-sm, 4px)',
-                    backgroundColor: 'rgba(0, 229, 255, 0.05)',
-                  }}>
-                    <label className="form-label" style={{ fontSize: '0.85rem', marginBottom: 8 }}>🎵 Audio Recording</label>
-                    
-                    {w.audio_url && (
-                      <div style={{ marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <audio controls style={{ flex: 1, height: 32 }} src={w.audio_url} />
-                      </div>
-                    )}
-                    
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <input
-                        ref={audioFileRef}
-                        type="file"
-                        accept=".mp3,.wav,.ogg,.m4a"
-                        onChange={e => {
-                          const file = e.target.files?.[0]
-                          if (file) handleAudioUpload(w.id, file)
-                          e.target.value = ''
-                        }}
-                        style={{ display: 'none' }}
-                      />
-                      <button
-                        className="btn btn-sm btn-ghost"
-                        onClick={() => audioFileRef.current?.click()}
-                        disabled={uploadingWordId === w.id}
-                      >
-                        {uploadingWordId === w.id ? '⏳ Uploading…' : '📤 Upload Audio'}
-                      </button>
-                      {w.audio_url && (
-                        <button
-                          className="btn btn-sm btn-danger"
-                          onClick={() => {
-                            const pathParts = w.audio_url!.split('/')
-                            const filePath = `${section}/${pathParts[pathParts.length - 1]}`
-                            handleRemoveAudio(w.id, filePath)
-                          }}
-                        >
-                          ✕ Remove
-                        </button>
-                      )}
-                    </div>
-                  </div>
                   
                   <div className={styles.editBtns} style={{ marginTop: 12 }}>
                     <button className="btn btn-green btn-sm" onClick={() => saveEdit(w.id)}>Save</button>
@@ -342,11 +213,6 @@ function SpellingWordsTab({ showToast }: { showToast: (msg: string, type: 'succe
                 <>
                   <div className={styles.qInfo}>
                     <strong className={styles.qText}>{i + 1}. {w.word}</strong>
-                    {w.audio_url ? (
-                      <span style={{ fontSize: '0.8rem', color: '#00e676', fontWeight: 600 }}>🎵</span>
-                    ) : (
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text2)' }}>🔇 No audio</span>
-                    )}
                     {w.hint && <span className={styles.qHint}>💡 {w.hint}</span>}
                   </div>
                   <div className={styles.itemBtns}>
@@ -385,40 +251,25 @@ function SpellingWordsTab({ showToast }: { showToast: (msg: string, type: 'succe
 
 // ── Edit question in place ──
 async function updateQuestion(id: string, question: string, answer: string, difficulty?: string, hint?: string) {
-  const { error } = await supabase.from('questions').update({ question, answer, difficulty: difficulty || null, hint: hint || null }).eq('id', id)
-  if (error) throw error
+  await db.updateQuestion(id, question, answer, difficulty, hint)
 }
 async function updatePracticeQuestion(id: string, question: string, answer: string, hint: string) {
-  const { error } = await supabase.from('practice_questions').update({ question, answer, hint }).eq('id', id)
-  if (error) throw error
+  await db.updatePracticeQuestion(id, question, answer, hint)
 }
 async function updateQuestionDifficulty(ids: string[], difficulty: string) {
-  const { error } = await supabase.from('questions').update({ difficulty }).in('id', ids)
-  if (error) throw error
+  await db.updateQuestionDifficulty(ids, difficulty)
 }
-async function deleteAllQuestions() {
-  const response = await fetch('/api/admin-delete-questions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ deleteAll: true })
-  })
-  if (!response.ok) {
-    const data = await response.json()
-    throw new Error(data.error || 'Failed to delete all questions')
+async function deleteAllQuestions(section: string, category: Category) {
+  // Get all questions for this section/category
+  const questions = await db.getQuestions(section, category)
+  for (const q of questions) {
+    await db.deleteQuestion(q.id)
   }
-  return response.json()
 }
 async function deleteQuestionsByIds(ids: string[]) {
-  const response = await fetch('/api/admin-delete-questions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ids })
-  })
-  if (!response.ok) {
-    const data = await response.json()
-    throw new Error(data.error || 'Failed to delete questions')
+  for (const id of ids) {
+    await db.deleteQuestion(id)
   }
-  return response.json()
 }
 
 export default function AdminPage() {
@@ -431,24 +282,24 @@ export default function AdminPage() {
   const [showPw,  setShowPw]  = useState(false)
 
   useEffect(() => {
-    if (sessionStorage.getItem('sow-admin') === 'true') setAuthed(true)
+    if (sessionStorage.getItem('beka-admin') === 'true') setAuthed(true)
   }, [])
 
   const handleLogin = () => {
     if (pwInput === ADMIN_PASSWORD) {
-      sessionStorage.setItem('sow-admin', 'true')
+      sessionStorage.setItem('beka-admin', 'true')
       setAuthed(true); setPwError(false)
     } else { setPwError(true); setPwInput('') }
   }
-  const handleLogout = () => { sessionStorage.removeItem('sow-admin'); setAuthed(false) }
+  const handleLogout = () => { sessionStorage.removeItem('beka-admin'); setAuthed(false) }
 
   // Filters
   const [tab,      setTab]      = useState<AdminTab>('quiz')
   const [section,  setSection]  = useState<Section>(SECTIONS[0])
-  const [category, setCategory] = useState<Category>(CATEGORIES[0])
+  const category: Category = 'Spelling Bee'
 
   // Quiz questions
-  const [quizQs,   setQuizQs]   = useState<Question[]>([])
+  const [quizQs,   setQuizQs]   = useState<db.Question[]>([])
   const [quizLoad, setQuizLoad]  = useState(false)
   const [qNewQ,    setQNewQ]     = useState('')
   const [qNewA,    setQNewA]     = useState('')
@@ -459,7 +310,7 @@ export default function AdminPage() {
   const [editQVal, setEditQVal]  = useState({ q: '', a: '', diff: '', hint: '' })
 
   // Practice questions
-  const [practiceQs,   setPracticeQs]   = useState<PracticeQuestion[]>([])
+  const [practiceQs,   setPracticeQs]   = useState<db.PracticeQuestion[]>([])
   const [practiceLoad, setPracticeLoad] = useState(false)
   const [pNewQ,        setPNewQ]        = useState('')
   const [pNewA,        setPNewA]        = useState('')
@@ -488,21 +339,28 @@ export default function AdminPage() {
   const [deleteAllConfirm, setDeleteAllConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
+  // Backup/Reset
+  const [showBackupZone, setShowBackupZone] = useState(false)
+  const [resetConfirmText, setResetConfirmText] = useState('')
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
+  const [backupProcessing, setBackupProcessing] = useState(false)
+  const importFileRef = useRef<HTMLInputElement>(null)
+
   const loadQuiz = useCallback(async () => {
     if (!authed) return
     setQuizLoad(true)
-    try { setQuizQs(await getQuestions(section, category)) }
+    try { setQuizQs(await db.getQuestions(section, category)) }
     catch { showToast('Error loading', 'error') }
     finally { setQuizLoad(false) }
-  }, [section, category, authed])
+  }, [section, category, authed, showToast])
 
   const loadPractice = useCallback(async () => {
     if (!authed) return
     setPracticeLoad(true)
-    try { setPracticeQs(await getAllPracticeQuestions(section, category)) }
+    try { setPracticeQs(await db.getAllPracticeQuestions(section, category)) }
     catch { showToast('Error loading', 'error') }
     finally { setPracticeLoad(false) }
-  }, [section, category, authed])
+  }, [section, category, authed, showToast])
 
   useEffect(() => {
     if (tab === 'quiz') loadQuiz(); else loadPractice()
@@ -513,7 +371,7 @@ export default function AdminPage() {
     if (!qNewQ.trim() || !qNewA.trim()) { showToast('Fill question and answer', 'error'); return }
     setQSaving(true)
     try { 
-      await addQuestion({ 
+      await db.addQuestion({ 
         section, 
         category, 
         question: qNewQ.trim(), 
@@ -533,10 +391,10 @@ export default function AdminPage() {
   }
   const handleDeleteQuiz = async (id: string) => {
     if (!confirm('Delete this question?')) return
-    try { await deleteQuestion(id); showToast('Deleted', 'success'); loadQuiz() }
+    try { await db.deleteQuestion(id); showToast('Deleted', 'success'); loadQuiz() }
     catch { showToast('Error', 'error') }
   }
-  const startEditQuiz = (q: Question) => { setEditingQ(q.id); setEditQVal({ q: q.question, a: q.answer, diff: q.difficulty || '', hint: q.hint || '' }) }
+  const startEditQuiz = (q: db.Question) => { setEditingQ(q.id); setEditQVal({ q: q.question, a: q.answer, diff: q.difficulty || '', hint: q.hint || '' }) }
   const saveEditQuiz = async (id: string) => {
     try { await updateQuestion(id, editQVal.q, editQVal.a, editQVal.diff || undefined, editQVal.hint || undefined); showToast('Updated!', 'success'); setEditingQ(null); loadQuiz() }
     catch { showToast('Error', 'error') }
@@ -546,15 +404,15 @@ export default function AdminPage() {
   const handleAddPractice = async () => {
     if (!pNewQ.trim() || !pNewA.trim()) { showToast('Fill question and answer', 'error'); return }
     setPSaving(true)
-    try { await addPracticeQuestion({ section, category, question: pNewQ.trim(), answer: pNewA.trim(), hint: pNewHint.trim() }); showToast('Added!', 'success'); setPNewQ(''); setPNewA(''); setPNewHint(''); loadPractice() }
+    try { await db.addPracticeQuestion({ section, category, question: pNewQ.trim(), answer: pNewA.trim(), hint: pNewHint.trim() }); showToast('Added!', 'success'); setPNewQ(''); setPNewA(''); setPNewHint(''); loadPractice() }
     catch { showToast('Error', 'error') } finally { setPSaving(false) }
   }
   const handleDeletePractice = async (id: string) => {
     if (!confirm('Delete this question?')) return
-    try { await deletePracticeQuestion(id); showToast('Deleted', 'success'); loadPractice() }
+    try { await db.deletePracticeQuestion(id); showToast('Deleted', 'success'); loadPractice() }
     catch { showToast('Error', 'error') }
   }
-  const startEditPractice = (q: PracticeQuestion) => { setEditingP(q.id); setEditPVal({ q: q.question, a: q.answer, hint: q.hint }) }
+  const startEditPractice = (q: db.PracticeQuestion) => { setEditingP(q.id); setEditPVal({ q: q.question, a: q.answer, hint: q.hint }) }
   const saveEditPractice = async (id: string) => {
     try { await updatePracticeQuestion(id, editPVal.q, editPVal.a, editPVal.hint); showToast('Updated!', 'success'); setEditingP(null); loadPractice() }
     catch { showToast('Error', 'error') }
@@ -618,7 +476,6 @@ export default function AdminPage() {
     if (!csvParsed.length) return
     setCsvImporting(true)
     try {
-      const table = tab === 'quiz' ? 'questions' : 'practice_questions'
       const rows = csvParsed.map(r => {
         const row: any = {
           section, category,
@@ -630,20 +487,23 @@ export default function AdminPage() {
         if (r.hint) {
           row.hint = r.hint
         } else if (tab === 'practice') {
-          row.hint = null
+          row.hint = ''
         }
         
         // Add difficulty if present and not empty (quiz only)
         if (tab === 'quiz' && r.difficulty) {
           row.difficulty = r.difficulty
-        } else if (tab === 'quiz') {
-          row.difficulty = null
         }
         
         return row
       })
-      const { error } = await supabase.from(table).insert(rows)
-      if (error) throw error
+      
+      if (tab === 'quiz') {
+        await db.bulkInsertQuestions(rows)
+      } else {
+        await db.bulkInsertPracticeQuestions(rows)
+      }
+      
       showToast(`✅ Imported ${rows.length} questions!`, 'success')
       setCsvText(''); setCsvParsed([]); setCsvTab(false)
       if (tab === 'quiz') loadQuiz(); else loadPractice()
@@ -673,23 +533,6 @@ export default function AdminPage() {
 
   return (
     <div className="page" style={{ maxWidth: 920 }}>
-      {(!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) && (
-        <div style={{
-          width: '100%',
-          backgroundColor: '#FFD70022',
-          border: '2px solid #FFD700',
-          borderRadius: 'var(--radius-md, 8px)',
-          padding: '12px',
-          marginBottom: '16px',
-          color: '#fff',
-          fontSize: '0.95rem',
-          fontWeight: 500,
-          lineHeight: 1.4
-        }}>
-          ⚠️ Supabase is not configured. Open <code style={{ fontFamily: 'monospace', backgroundColor: 'rgba(0,0,0,0.2)', padding: '2px 6px', borderRadius: '4px' }}>.env.local</code> and add your <strong>NEXT_PUBLIC_SUPABASE_URL</strong>, <strong>NEXT_PUBLIC_SUPABASE_ANON_KEY</strong> and <strong>SUPABASE_SERVICE_ROLE_KEY</strong> values before using the admin panel.
-        </div>
-      )}
-
       <div className={styles.topBar}>
         <h1 className={styles.title}>⚙ Admin Panel</h1>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -718,7 +561,7 @@ export default function AdminPage() {
         </button>
       </div>
 
-      {/* Filters — only for quiz/practice tabs */}
+      {/* Filters - only for quiz/practice tabs */}
       {(tab === 'quiz' || tab === 'practice') && (
       <div className="form-row" style={{ maxWidth: 540, marginBottom: 16 }}>
         <div className="form-group">
@@ -727,18 +570,12 @@ export default function AdminPage() {
             {SECTIONS.map(s => <option key={s}>{s}</option>)}
           </select>
         </div>
-        <div className="form-group">
-          <label className="form-label">Category</label>
-          <select value={category} onChange={e => setCategory(e.target.value as Category)}>
-            {CATEGORIES.map(c => <option key={c} value={c}>{CATEGORY_ICONS[c]} {c}</option>)}
-          </select>
-        </div>
       </div>
       )}
 
       {(tab === 'quiz' || tab === 'practice') && (
       <div className={styles.stats}>
-        {tab === 'quiz' ? '🎮 Quiz' : '📚 Practice'} — <strong>{CATEGORY_ICONS[category]} {category}</strong> · <strong>{section}</strong> · <strong>{tab === 'quiz' ? quizQs.length : practiceQs.length}</strong> questions
+        {tab === 'quiz' ? '🎮 Quiz' : '📚 Practice'} — <strong>🐝 Spelling Bee</strong> · <strong>{section}</strong> · <strong>{tab === 'quiz' ? quizQs.length : practiceQs.length}</strong> questions
       </div>
       )}
 
@@ -760,7 +597,7 @@ export default function AdminPage() {
             rows={6} />
           {csvParsed.length > 0 && (
             <div className={styles.csvPreview}>
-              <p className={styles.csvPreviewTitle}>✅ {csvParsed.length} questions ready to import into <strong>{section} / {category}</strong></p>
+              <p className={styles.csvPreviewTitle}>✅ {csvParsed.length} questions ready to import into <strong>{section}</strong></p>
               <div className={styles.csvPreviewList}>
                 {csvParsed.slice(0, 5).map((r, i) => (
                   <div key={i} className={styles.csvPreviewRow}>
@@ -955,8 +792,8 @@ export default function AdminPage() {
           </div>
 
           {/* Danger zone */}
-          <div style={{ marginTop: 32, paddingTop: 24, borderTop: '2px solid #C8102E33' }}>
-            <button className="btn btn-sm btn-ghost" onClick={() => setShowDeleteZone(!showDeleteZone)} style={{ color: '#C8102E', fontWeight: 700 }}>
+          <div style={{ marginTop: 32, paddingTop: 24, borderTop: '2px solid #8B5CF633' }}>
+            <button className="btn btn-sm btn-ghost" onClick={() => setShowDeleteZone(!showDeleteZone)} style={{ color: '#8B5CF6', fontWeight: 700 }}>
               ⚠ {showDeleteZone ? 'Hide' : 'Show'} Danger Zone
             </button>
             {showDeleteZone && (
@@ -1002,11 +839,11 @@ export default function AdminPage() {
                 </div>
 
                 {/* Delete all */}
-                <div className={styles.dangerZoneSection} style={{ borderTop: '1px solid #C8102E44', paddingTop: 16 }}>
+                <div className={styles.dangerZoneSection} style={{ borderTop: '1px solid #8B5CF644', paddingTop: 16 }}>
                   <div>
                     <h4 style={{ color: 'var(--text)', fontSize: '0.95rem', fontWeight: 700, marginBottom: 6 }}>Delete All Questions</h4>
                     <p style={{ fontSize: '0.85rem', color: 'var(--text2)', marginBottom: 12 }}>
-                      Delete ALL questions in <strong>{section} / {category}</strong>. Type "DELETE" to confirm.
+                      Delete ALL Spelling Bee questions in <strong>{section}</strong>. Type "DELETE" to confirm.
                     </p>
                   </div>
                   {!deleteAllConfirm ? (
@@ -1043,7 +880,7 @@ export default function AdminPage() {
                           if (deleteConfirmText !== 'DELETE') { showToast('Type DELETE exactly', 'error'); return }
                           setDeleting(true)
                           try {
-                            await deleteAllQuestions()
+                            await deleteAllQuestions(section, category)
                             showToast('✅ All questions deleted!', 'success')
                             setDeleteAllConfirm(false)
                             setDeleteConfirmText('')
@@ -1078,12 +915,174 @@ export default function AdminPage() {
       {/* ── SETTINGS TAB ── */}
       {tab === 'settings' && (
         <div style={{ maxWidth: 560 }}>
+          <div style={{ marginBottom: 24, padding: '12px', backgroundColor: '#0099FF0a', border: '1px solid #0099FF44', borderRadius: 'var(--radius-md)', color: 'var(--cyan)' }}>
+            💾 <strong>Data is saved on this device only.</strong> Export a backup regularly to prevent data loss.
+          </div>
+
           <h3 style={{ fontFamily: 'Bebas Neue', fontSize: '1.3rem', color: 'var(--cyan)', marginBottom: 16 }}>
             🔊 Audio Settings
           </h3>
           <VoicePicker />
           <div className={styles.practiceNote} style={{ marginTop: 8 }}>
             💡 The voice selected here is saved to this device and used whenever students hear spelling bee words in Practice Mode or the Quiz.
+          </div>
+
+          {/* Backup & Reset Section */}
+          <div style={{ marginTop: 32, paddingTop: 24, borderTop: '2px solid #0099FF33' }}>
+            <button className="btn btn-sm btn-ghost" onClick={() => setShowBackupZone(!showBackupZone)} style={{ color: 'var(--cyan)', fontWeight: 700 }}>
+              💾 {showBackupZone ? 'Hide' : 'Show'} Backup & Reset
+            </button>
+            {showBackupZone && (
+              <div className={styles.dangerZone}>
+                <h3 className={styles.dangerZoneTitle}>💾 Backup & Reset</h3>
+                <p className={styles.dangerZoneDesc}>Export backups to save your data, import to restore, or reset to default content.</p>
+                
+                {/* Export Backup */}
+                <div className={styles.dangerZoneSection}>
+                  <div>
+                    <h4 style={{ color: 'var(--text)', fontSize: '0.95rem', fontWeight: 700, marginBottom: 6 }}>Export Backup</h4>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text2)', marginBottom: 12 }}>
+                      Download all your data (questions, practice items, spelling words, leaderboards) as a JSON file.
+                    </p>
+                  </div>
+                  <button 
+                    className="btn btn-sm btn-primary"
+                    onClick={async () => {
+                      setBackupProcessing(true)
+                      try {
+                        const backup = db.exportBackup()
+                        const blob = new Blob([backup], { type: 'application/json' })
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement('a')
+                        a.href = url
+                        a.download = `beka-backup-${new Date().toISOString().split('T')[0]}.json`
+                        a.click()
+                        URL.revokeObjectURL(url)
+                        showToast('✅ Backup downloaded!', 'success')
+                      } catch {
+                        showToast('Error exporting backup', 'error')
+                      } finally {
+                        setBackupProcessing(false)
+                      }
+                    }}
+                    disabled={backupProcessing}
+                    style={{ minWidth: 160 }}
+                  >
+                    {backupProcessing ? 'Processing…' : '⬇ Export Backup'}
+                  </button>
+                </div>
+
+                {/* Import Backup */}
+                <div className={styles.dangerZoneSection} style={{ borderTop: '1px solid #0099FF44', paddingTop: 16 }}>
+                  <div>
+                    <h4 style={{ color: 'var(--text)', fontSize: '0.95rem', fontWeight: 700, marginBottom: 6 }}>Import Backup</h4>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text2)', marginBottom: 12 }}>
+                      Restore data from a previously exported backup file. This will merge with existing data.
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input 
+                      ref={importFileRef}
+                      type="file" 
+                      accept=".json"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        setBackupProcessing(true)
+                        try {
+                          const text = await file.text()
+                          db.importBackup(text)
+                          showToast('✅ Backup imported!', 'success')
+                          loadQuiz()
+                          loadPractice()
+                        } catch {
+                          showToast('Invalid backup file', 'error')
+                        } finally {
+                          setBackupProcessing(false)
+                          e.target.value = ''
+                        }
+                      }}
+                      style={{ display: 'none' }}
+                    />
+                    <button 
+                      className="btn btn-sm btn-ghost"
+                      onClick={() => importFileRef.current?.click()}
+                      disabled={backupProcessing}
+                      style={{ minWidth: 160 }}
+                    >
+                      {backupProcessing ? 'Processing…' : '📂 Import Backup'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Reset to Defaults */}
+                <div className={styles.dangerZoneSection} style={{ borderTop: '1px solid #8B5CF644', paddingTop: 16 }}>
+                  <div>
+                    <h4 style={{ color: 'var(--text)', fontSize: '0.95rem', fontWeight: 700, marginBottom: 6 }}>Reset to Defaults</h4>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text2)', marginBottom: 12 }}>
+                      Erase all custom data and restore the original questions, practice items, and spelling words.
+                    </p>
+                  </div>
+                  {!showResetConfirm ? (
+                    <button 
+                      className="btn btn-sm btn-danger"
+                      onClick={() => setShowResetConfirm(true)}
+                      style={{ minWidth: 160 }}
+                    >
+                      Reset to Defaults
+                    </button>
+                  ) : (
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 300 }}>
+                      <input 
+                        type="text" 
+                        placeholder="Type RESET" 
+                        value={resetConfirmText} 
+                        onChange={e => setResetConfirmText(e.target.value)} 
+                        autoFocus
+                        style={{ 
+                          flex: 1, 
+                          padding: '8px 12px', 
+                          borderRadius: 'var(--radius-sm)', 
+                          border: resetConfirmText === 'RESET' ? '2px solid var(--green)' : '2px solid var(--danger)',
+                          background: 'var(--surface)',
+                          color: 'var(--text)',
+                          fontSize: '0.9rem',
+                          fontFamily: 'monospace',
+                          fontWeight: 700
+                        }}
+                      />
+                      <button 
+                        className="btn btn-sm btn-danger"
+                        onClick={async () => {
+                          if (resetConfirmText !== 'RESET') { showToast('Type RESET exactly', 'error'); return }
+                          setBackupProcessing(true)
+                          try {
+                            db.resetToDefaults()
+                            showToast('✅ Data reset to defaults!', 'success')
+                            setShowResetConfirm(false)
+                            setResetConfirmText('')
+                            loadQuiz()
+                            loadPractice()
+                          } catch (err: any) { showToast(err.message || 'Error resetting', 'error') }
+                          finally { setBackupProcessing(false) }
+                        }} 
+                        disabled={backupProcessing || resetConfirmText !== 'RESET'}
+                        style={{ minWidth: 100 }}
+                      >
+                        {backupProcessing ? 'Processing…' : 'Confirm'}
+                      </button>
+                      <button 
+                        className="btn btn-sm btn-ghost"
+                        onClick={() => { setShowResetConfirm(false); setResetConfirmText('') }}
+                        disabled={backupProcessing}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -13,10 +13,8 @@ function Stars({ count, total = 5 }: { count: number; total?: number }) {
   )
 }
 
-function getCategoryIcon(cat: string) {
-  if (cat === 'Maths') return '📐'
-  if (cat === 'Spelling Bee') return '🐝'
-  return '🌍'
+function getCategoryIcon(cat: string = 'Spelling Bee') {
+  return '🐝'
 }
 
 function getStarLabel(stars: number) {
@@ -35,12 +33,12 @@ function CertContent() {
 
   const name     = params.get('name')     ?? 'Student'
   const section  = params.get('section')  ?? ''
-  const category = params.get('category') ?? ''
   const score    = params.get('score')    ?? '0'
   const total    = params.get('total')    ?? '0'
   const pct      = params.get('pct')      ?? '0'
   const stars    = parseInt(params.get('stars') ?? '3')
   const date     = params.get('date')     ?? ''
+  const category = 'Spelling Bee'
 
   const starLabel = getStarLabel(stars)
   const catIcon   = getCategoryIcon(category)
@@ -59,7 +57,7 @@ function CertContent() {
         windowWidth: 900,
       } as any )
       const link = document.createElement('a')
-      link.download = `SOW-Practice-Certificate-${name.replace(/\s+/g, '-')}.png`
+      link.download = `BEKA-Practice-Certificate-${name.replace(/\s+/g, '-')}.png`
       link.href = canvas.toDataURL('image/png')
       link.click()
     } catch (e) {
@@ -92,13 +90,13 @@ function CertContent() {
 
               <div className={styles.certHeader}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/logo.jpeg" alt="SOW" className={styles.logo} />
+                <img src="/logo.jpg" alt="BEKA" className={styles.logo} />
                 <div className={styles.schoolInfo}>
-                  <p className={styles.schoolName}>Seat of Wisdom Group of Schools</p>
-                  <p className={styles.schoolTagline}>Excellence · Knowledge · Character</p>
+                  <p className={styles.schoolName}>BEKA Academy</p>
+                  <p className={styles.schoolTagline}>Making a Difference, One Child at a Time</p>
                 </div>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/logo.jpeg" alt="SOW" className={styles.logo} />
+                <img src="/logo.jpg" alt="BEKA" className={styles.logo} />
               </div>
 
               <div className={styles.divider} />

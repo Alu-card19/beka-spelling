@@ -90,31 +90,24 @@ export default function Round2FastFingers() {
           ? <p className={styles.placeholder}>Press <strong>Next Question</strong> to begin!</p>
           : <>
               <div className={styles.qCat}>
-                {current.category === 'Maths' ? '📐' : current.category === 'Spelling Bee' ? '🐝' : '🌍'}
-                &nbsp;{current.category}
+                🐝 Spelling Bee
               </div>
-              {current.category === 'Spelling Bee' ? (
-                <div className={styles.spellingWrap}>
-                  <p className={styles.spellingLabel}>Spell the word:</p>
-                  <div className={`${styles.spellingWord} ${revealed ? styles.unblurred : ''}`}>
-                    {current.question}
-                  </div>
-                  {!revealed && (
-                    <p className={styles.blurHint}>👆 Hidden — use audio for contestants</p>
-                  )}
+              <div className={styles.spellingWrap}>
+                <p className={styles.spellingLabel}>Spell the word:</p>
+                <div className={`${styles.spellingWord} ${revealed ? styles.unblurred : ''}`}>
+                  {current.question}
                 </div>
-              ) : (
-                <p className={styles.qText}>{current.question}</p>
-              )}
-              {current.category === 'Spelling Bee' && (
-                <button className={styles.audioBtn} onClick={() => {
-                  if (!window.speechSynthesis) return
-                  window.speechSynthesis.cancel()
-                  const u = new SpeechSynthesisUtterance(current.question)
-                  u.rate = 0.75
-                  window.speechSynthesis.speak(u)
-                }}>🔊 Hear the Word</button>
-              )}
+                {!revealed && (
+                  <p className={styles.blurHint}>👆 Hidden — use audio for contestants</p>
+                )}
+              </div>
+              <button className={styles.audioBtn} onClick={() => {
+                if (!window.speechSynthesis) return
+                window.speechSynthesis.cancel()
+                const u = new SpeechSynthesisUtterance(current.question)
+                u.rate = 0.75
+                window.speechSynthesis.speak(u)
+              }}>🔊 Hear the Word</button>
             </>
         }
       </div>

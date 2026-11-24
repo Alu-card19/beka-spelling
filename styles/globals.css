@@ -17,8 +17,8 @@
   --text2:    rgba(238,242,255,0.62);
   --text3:    rgba(238,242,255,0.34);
 
-  --red:      #C8102E;
-  --red2:     #a00c24;
+  --red:      #8B5CF6;
+  --red2:     #7c3aed;
   --navy:     #003580;
   --gold:     #FFD700;
   --gold2:    #c9a800;
@@ -49,14 +49,14 @@
   --text2:    rgba(11,15,46,0.60);
   --text3:    rgba(11,15,46,0.35);
 
-  --red:      #C8102E;
-  --red2:     #a00c24;
+  --red:      #8B5CF6;
+  --red2:     #7c3aed;
   --navy:     #003580;
   --gold:     #b8860b;
   --gold2:    #8a6400;
   --green:    #1b7a40;
   --cyan:     #0055b3;
-  --danger:   #C8102E;
+  --danger:   #8B5CF6;
 
   --shadow:      0 4px 20px rgba(0,0,0,0.09);
   --shadow-gold: 0 4px 18px rgba(184,134,11,0.18);
@@ -141,7 +141,7 @@ textarea { resize: vertical; min-height: 64px; }
 .btn:active:not(:disabled) { transform: translateY(0); }
 .btn:disabled { opacity: 0.38; cursor: not-allowed; }
 
-.btn-primary { background: var(--red);  color: #fff; box-shadow: 0 4px 16px rgba(200,16,46,0.28); }
+.btn-primary { background: var(--red);  color: #fff; box-shadow: 0 4px 16px rgba(139,92,246,0.28); }
 .btn-navy    { background: var(--navy); color: #fff; }
 .btn-gold    { background: var(--gold); color: #fff; box-shadow: var(--shadow-gold); }
 .btn-green   { background: var(--green); color: #000; }

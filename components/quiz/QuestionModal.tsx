@@ -133,6 +133,12 @@ export default function QuestionModal({ question, onClose, onAwarded, timerSecon
           </button>
         )}
 
+        {isSpelling && question.sentence && (
+          <button className={styles.audioBtn} onClick={() => speakWord(question.sentence || '')}>
+            📖 Use in a Sentence
+          </button>
+        )}
+
         {revealed ? (
           <div className={styles.answerBox}>
             <span className={styles.answerLabel}>Answer: </span>

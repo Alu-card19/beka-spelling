@@ -9,12 +9,12 @@ import AdminGate from '@/components/ui/AdminGate'
 import styles from './page.module.css'
 
 const PRESET_COLORS = [
-  '#C8102E','#003580','#FFD700','#00C853',
+  '#8B5CF6','#003580','#FFD700','#00C853',
   '#00B0FF','#FF6D00','#AA00FF','#F50057',
   '#00BFA5','#FF4081','#6200EA','#1565C0',
 ]
 const DEFAULT_TEAMS: Team[] = [
-  { name: 'Team Red',  color: '#C8102E' },
+  { name: 'Team Purple',  color: '#8B5CF6' },
   { name: 'Team Blue', color: '#003580' },
   { name: 'Team Gold', color: '#FFD700' },
 ]

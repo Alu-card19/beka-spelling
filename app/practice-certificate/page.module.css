@@ -14,28 +14,28 @@
   box-shadow: 0 24px 64px rgba(0,0,0,0.5);
 }
 
-.outerBorder { padding: 18px; background: linear-gradient(135deg, #C8102E 0%, #8B0E21 25%, #003580 50%, #8B0E21 75%, #C8102E 100%); border-radius: 6px; }
+.outerBorder { padding: 18px; background: linear-gradient(135deg, #8B5CF6 0%, #8B0E21 25%, #003580 50%, #8B0E21 75%, #8B5CF6 100%); border-radius: 6px; }
 .innerBorder { background: #fffef8; border-radius: 3px; padding: 40px 56px 32px; border: 2.5px solid #FFD700; }
 
 .topDeco    { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
-.decoLine   { flex: 1; height: 2px; background: linear-gradient(90deg, transparent, #C8102E, #FFD700, #C8102E, transparent); border-radius: 999px; }
+.decoLine   { flex: 1; height: 2px; background: linear-gradient(90deg, transparent, #8B5CF6, #FFD700, #8B5CF6, transparent); border-radius: 999px; }
 .decoStar   { font-size: 1.3rem; color: #FFD700; }
-.bottomDeco { text-align: center; margin-top: 14px; color: #C8102E; letter-spacing: 8px; font-size: 0.9rem; }
+.bottomDeco { text-align: center; margin-top: 14px; color: #8B5CF6; letter-spacing: 8px; font-size: 0.9rem; }
 
 .certHeader    { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 18px; }
 .logo          { width: 90px; height: 90px; border-radius: 50%; border: 3px solid #FFD700; object-fit: cover; display: block; flex-shrink: 0; }
 .schoolInfo    { text-align: center; flex: 1; }
 .schoolName    { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; color: #003580; letter-spacing: 0.5px; line-height: 1.2; margin: 0; }
-.schoolTagline { font-size: 0.68rem; font-weight: 900; color: #C8102E; text-transform: uppercase; letter-spacing: 3px; margin: 4px 0 0; }
+.schoolTagline { font-size: 0.68rem; font-weight: 900; color: #8B5CF6; text-transform: uppercase; letter-spacing: 3px; margin: 4px 0 0; }
 
-.divider { height: 3px; background: linear-gradient(90deg, transparent, #FFD700, #C8102E, #003580, #C8102E, #FFD700, transparent); margin: 16px 0; border-radius: 999px; }
+.divider { height: 3px; background: linear-gradient(90deg, transparent, #FFD700, #8B5CF6, #003580, #8B5CF6, #FFD700, transparent); margin: 16px 0; border-radius: 999px; }
 
 .certTitle   { font-family: 'Bebas Neue', sans-serif; font-size: 2.6rem; color: #003580; text-align: center; letter-spacing: 3px; margin: 0 0 4px; }
-.certSub     { font-size: 0.78rem; font-weight: 900; color: #C8102E; text-transform: uppercase; letter-spacing: 2px; text-align: center; margin: 0 0 14px; }
+.certSub     { font-size: 0.78rem; font-weight: 900; color: #8B5CF6; text-transform: uppercase; letter-spacing: 2px; text-align: center; margin: 0 0 14px; }
 .presentedTo { text-align: center; font-size: 0.95rem; color: #555; font-style: italic; margin: 0 0 12px; }
 
-.nameBox     { border-bottom: 2.5px solid #C8102E; margin: 0 auto 16px; max-width: 600px; padding: 4px 16px 10px; text-align: center; }
-.studentName { font-family: 'Bebas Neue', sans-serif; font-size: 3.2rem; color: #C8102E; letter-spacing: 2px; line-height: 1.1; margin: 0; }
+.nameBox     { border-bottom: 2.5px solid #8B5CF6; margin: 0 auto 16px; max-width: 600px; padding: 4px 16px 10px; text-align: center; }
+.studentName { font-family: 'Bebas Neue', sans-serif; font-size: 3.2rem; color: #8B5CF6; letter-spacing: 2px; line-height: 1.1; margin: 0; }
 
 .bodyText  { text-align: center; font-size: 0.95rem; color: #444; margin: 0 0 6px; line-height: 1.6; }
 .bodyText strong { color: #003580; }
@@ -57,3 +57,4 @@
 .dateBox    { flex: 1; text-align: center; }
 .dateVal    { font-weight: 900; font-size: 0.95rem; color: #003580; margin: 0; }
 .dateLabel  { font-size: 0.65rem; color: #777; text-transform: uppercase; letter-spacing: 1px; margin: 2px 0 0; }
+

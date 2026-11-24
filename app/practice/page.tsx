@@ -1,7 +1,7 @@
 'use client'
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { SECTIONS, CATEGORIES, CATEGORY_ICONS, Section, Category } from '@/lib/questions'
+import { SECTIONS, Section } from '@/lib/questions'
 import { getPracticeQuestions, PracticeQuestion } from '@/lib/practice'
 import { speakWord, repeatWord } from '@/lib/speech'
 import styles from './page.module.css'
@@ -38,7 +38,6 @@ export default function PracticePage() {
   const [stage,       setStage]       = useState<Stage>('setup')
   const [studentName, setStudentName] = useState('')
   const [section,     setSection]     = useState<Section>(SECTIONS[0])
-  const [category,    setCategory]    = useState<Category>(CATEGORIES[0])
   const [questions,   setQs]          = useState<PracticeQuestion[]>([])
   const [idx,         setIdx]         = useState(0)
   const [showHint,    setShowHint]    = useState(false)
@@ -53,23 +52,19 @@ export default function PracticePage() {
   const [submitted,   setSubmitted]   = useState(false)   // true after student submits spelling
   const [isCorrect,   setIsCorrect]   = useState<boolean | null>(null)
 
-  // For non-spelling — revealed flag
-  const [revealed,    setRevealed]    = useState(false)
-
   const inputRef = useRef<HTMLInputElement>(null)
   const current  = questions[idx] ?? null
-  const isSpelling = current?.category === 'Spelling Bee'
 
   // Focus input when a new spelling question loads
   useEffect(() => {
-    if (stage === 'quiz' && isSpelling && !submitted) {
+    if (stage === 'quiz' && !submitted) {
       setTimeout(() => inputRef.current?.focus(), 100)
     }
-  }, [idx, stage, isSpelling, submitted])
+  }, [idx, stage, submitted])
 
   // Auto-play word when a new spelling question appears
   useEffect(() => {
-    if (stage === 'quiz' && isSpelling && !submitted) {
+    if (stage === 'quiz' && !submitted) {
       speakWord(current?.question ?? '')
     }
   }, [idx, stage])
@@ -78,7 +73,7 @@ export default function PracticePage() {
     if (!studentName.trim()) return
     setLoading(true)
     try {
-      const qs = await getPracticeQuestions(section, category)
+      const qs = await getPracticeQuestions(section, 'Spelling Bee')
       if (qs.length === 0) {
         alert('No practice questions found for this selection.\n\nAsk your teacher to add some in the Admin panel under "Practice Questions".')
         return
@@ -86,12 +81,12 @@ export default function PracticePage() {
       setQs(qs)
       setIdx(0)
       setTyped(''); setSubmitted(false); setIsCorrect(null)
-      setRevealed(false); setShowHint(false)
+      setShowHint(false)
       setScore(0); setStreak(0); setBestStreak(0)
       setAnswers(new Array(qs.length).fill(null))
       setStage('quiz')
     } finally { setLoading(false) }
-  }, [section, category, studentName])
+  }, [section, studentName])
 
   // Shared — advance to next question after a delay
   const advance = (correct: boolean) => {
@@ -109,7 +104,7 @@ export default function PracticePage() {
       } else {
         setIdx(i => i + 1)
         setTyped(''); setSubmitted(false); setIsCorrect(null)
-        setRevealed(false); setShowHint(false)
+        setShowHint(false)
       }
     }, 1400)
   }
@@ -123,9 +118,6 @@ export default function PracticePage() {
     advance(correct)
   }
 
-  // Non-spelling — self-judge
-  const handleSelfJudge = (correct: boolean) => advance(correct)
-
   const handleGetCertificate = () => {
     const finalPct   = Math.round((score / questions.length) * 100)
     const finalStars = getStars(finalPct)
@@ -134,7 +126,6 @@ export default function PracticePage() {
       `/practice-certificate?` +
       `name=${encodeURIComponent(studentName.trim())}&` +
       `section=${encodeURIComponent(section)}&` +
-      `category=${encodeURIComponent(category)}&` +
       `score=${score}&total=${questions.length}&` +
       `pct=${finalPct}&stars=${finalStars}&` +
       `date=${encodeURIComponent(date)}`
@@ -165,24 +156,11 @@ export default function PracticePage() {
           <p className={styles.nameHint}>🏅 Your name will appear on your certificate</p>
         </div>
 
-        <div className="form-group" style={{ marginBottom: 14 }}>
+        <div className="form-group" style={{ marginBottom: 28 }}>
           <label className="form-label">Grade Section</label>
           <select value={section} onChange={e => setSection(e.target.value as Section)}>
             {SECTIONS.map(s => <option key={s}>{s}</option>)}
           </select>
-        </div>
-
-        <div className="form-group" style={{ marginBottom: 28 }}>
-          <label className="form-label">Category</label>
-          <div className={styles.catPicker}>
-            {CATEGORIES.map(c => (
-              <button key={c}
-                className={`${styles.catBtn} ${category === c ? styles.catActive : ''}`}
-                onClick={() => setCategory(c)}>
-                {CATEGORY_ICONS[c]} {c}
-              </button>
-            ))}
-          </div>
         </div>
 
         <button className="btn btn-primary btn-lg" onClick={loadAndStart}
@@ -209,110 +187,78 @@ export default function PracticePage() {
       </div>
 
       <div className={styles.qCard}>
-        <div className={styles.qCat}>{CATEGORY_ICONS[current.category]} {current.category}</div>
-
         {/* ── SPELLING BEE ── */}
-        {isSpelling ? (
-          <div className={styles.spellingWrap}>
-            <p className={styles.spellingLabel}>Listen and type the spelling:</p>
+        <div className={styles.spellingWrap}>
+          <p className={styles.spellingLabel}>Listen and type the spelling:</p>
 
-            {/* Audio buttons */}
-            <div className={styles.audioBtns}>
-              <button className={styles.audioBtn} onClick={() => speakWord(current.question)}>
-                🔊 Hear Word
+          {/* Audio buttons */}
+          <div className={styles.audioBtns}>
+            <button className={styles.audioBtn} onClick={() => speakWord(current.question)}>
+              🔊 Hear Word
+            </button>
+            <button className={styles.repeatBtn} onClick={() => repeatWord(current.question)}>
+              🔁 Repeat
+            </button>
+            {current.sentence && (
+              <button className={styles.audioBtn} onClick={() => speakWord(current.sentence || '')}>
+                📖 Sentence
               </button>
-              <button className={styles.repeatBtn} onClick={() => repeatWord(current.question)}>
-                🔁 Repeat
-              </button>
-            </div>
-
-            {/* Hint */}
-            {current.hint && !submitted && (
-              <div className={styles.hintWrap}>
-                {!showHint
-                  ? <button className={styles.hintBtn} onClick={() => setShowHint(true)}>💡 Show Hint</button>
-                  : <div className={styles.hintBox}>💡 {current.hint}</div>
-                }
-              </div>
-            )}
-
-            {/* Typing input — hidden after submission */}
-            {!submitted ? (
-              <div className={styles.typingWrap}>
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={typed}
-                  onChange={e => setTyped(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && typed.trim() && handleSubmitSpelling()}
-                  placeholder="Type your spelling here…"
-                  className={styles.spellingInput}
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                />
-                <button
-                  className="btn btn-primary"
-                  onClick={handleSubmitSpelling}
-                  disabled={!typed.trim()}>
-                  Submit ✓
-                </button>
-              </div>
-            ) : (
-              /* Result after submission */
-              <div className={`${styles.spellingResult} ${isCorrect ? styles.spellingCorrect : styles.spellingWrong}`}>
-                <div className={styles.spellingResultIcon}>{isCorrect ? '🎉' : '❌'}</div>
-                <div className={styles.spellingResultText}>
-                  <p className={styles.spellingYouTyped}>
-                    You typed: <strong>{typed}</strong>
-                  </p>
-                  {!isCorrect && (
-                    <p className={styles.spellingCorrectWord}>
-                      Correct spelling: <strong>{current.answer}</strong>
-                    </p>
-                  )}
-                  <p className={styles.spellingResultLabel}>
-                    {isCorrect ? 'Correct! Well done! 🌟' : 'Not quite — keep practising!'}
-                  </p>
-                </div>
-              </div>
             )}
           </div>
 
-        ) : (
-          /* ── MATHS / GENERAL KNOWLEDGE — self judge ── */
-          <>
-            <p className={styles.qText}>{current.question}</p>
+          {/* Hint */}
+          {current.hint && !submitted && (
+            <div className={styles.hintWrap}>
+              {!showHint
+                ? <button className={styles.hintBtn} onClick={() => setShowHint(true)}>💡 Show Hint</button>
+                : <div className={styles.hintBox}>💡 {current.hint}</div>
+              }
+            </div>
+          )}
 
-            {current.hint && !revealed && (
-              <div className={styles.hintWrap}>
-                {!showHint
-                  ? <button className={styles.hintBtn} onClick={() => setShowHint(true)}>💡 Show Hint</button>
-                  : <div className={styles.hintBox}>💡 {current.hint}</div>
-                }
-              </div>
-            )}
-
-            {!revealed ? (
-              <button className="btn btn-ghost" onClick={() => setRevealed(true)} style={{ marginTop: 16 }}>
-                👁 Show Answer
+          {/* Typing input — hidden after submission */}
+          {!submitted ? (
+            <div className={styles.typingWrap}>
+              <input
+                ref={inputRef}
+                type="text"
+                value={typed}
+                onChange={e => setTyped(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && typed.trim() && handleSubmitSpelling()}
+                placeholder="Type your spelling here…"
+                className={styles.spellingInput}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
+              />
+              <button
+                className="btn btn-primary"
+                onClick={handleSubmitSpelling}
+                disabled={!typed.trim()}>
+                Submit ✓
               </button>
-            ) : (
-              <div className={styles.answerSection}>
-                <div className={styles.answerBox}>
-                  <span className={styles.answerLabel}>Answer:</span>
-                  <span className={styles.answerVal}>{current.answer}</span>
-                </div>
-                <p className={styles.selfJudge}>Did you get it right?</p>
-                <div className={styles.judgeRow}>
-                  <button className={`${styles.judgeBtn} ${styles.correct}`} onClick={() => handleSelfJudge(true)}>✓ Got it!</button>
-                  <button className={`${styles.judgeBtn} ${styles.wrong}`}   onClick={() => handleSelfJudge(false)}>✗ Missed it</button>
-                </div>
+            </div>
+          ) : (
+            /* Result after submission */
+            <div className={`${styles.spellingResult} ${isCorrect ? styles.spellingCorrect : styles.spellingWrong}`}>
+              <div className={styles.spellingResultIcon}>{isCorrect ? '🎉' : '❌'}</div>
+              <div className={styles.spellingResultText}>
+                <p className={styles.spellingYouTyped}>
+                  You typed: <strong>{typed}</strong>
+                </p>
+                {!isCorrect && (
+                  <p className={styles.spellingCorrectWord}>
+                    Correct spelling: <strong>{current.answer}</strong>
+                  </p>
+                )}
+                <p className={styles.spellingResultLabel}>
+                  {isCorrect ? 'Correct! Well done! 🌟' : 'Not quite — keep practising!'}
+                </p>
               </div>
-            )}
-          </>
-        )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className={styles.dots}>

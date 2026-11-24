@@ -147,9 +147,9 @@
   border: 1px solid rgba(255, 109, 0, 0.3);
 }
 .diffBadge[data-difficulty="champion"] {
-  background-color: rgba(200, 16, 46, 0.15);
-  color: #C8102E;
-  border: 1px solid rgba(200, 16, 46, 0.3);
+  background-color: rgba(139, 92, 246, 0.15);
+  color: #8B5CF6;
+  border: 1px solid rgba(139, 92, 246, 0.3);
 }
 .diffBadgeUntagged {
   display: inline-block;
@@ -271,20 +271,20 @@
 .bulkSelectAllLabel { cursor: pointer; margin-bottom: 0; font-size: 0.9rem; font-weight: 600; color: var(--text); }
 
 /* Danger Zone */
-.dangerZoneContainer { margin-top: 32px; padding-top: 24px; border-top: 2px solid rgba(200, 16, 46, 0.2); }
+.dangerZoneContainer { margin-top: 32px; padding-top: 24px; border-top: 2px solid rgba(139, 92, 246, 0.2); }
 .dangerZoneToggle { color: var(--danger); transition: all 0.18s; }
 .dangerZoneToggle:hover { opacity: 0.8; }
 .dangerZonePanel { 
   margin-top: 16px; 
   padding: 20px; 
-  border: 2px solid #C8102E; 
+  border: 2px solid #8B5CF6; 
   border-radius: var(--radius-sm); 
-  background: rgba(200, 16, 46, 0.08);
+  background: rgba(139, 92, 246, 0.08);
 }
 .dangerZoneTitle { 
   font-family: 'Bebas Neue', sans-serif;
   font-size: 1.2rem; 
-  color: #C8102E; 
+  color: #8B5CF6; 
   margin-bottom: 16px;
   letter-spacing: 0.5px;
 }
@@ -311,11 +311,11 @@
 }
 .confirmInput:focus { 
   outline: none; 
-  border-color: #C8102E;
+  border-color: #8B5CF6;
 }
 .dangerBtn {
-  background: #C8102E;
-  border: 1px solid #C8102E;
+  background: #8B5CF6;
+  border: 1px solid #8B5CF6;
   color: #fff;
   border-radius: 8px;
   padding: 6px 14px;
@@ -329,7 +329,7 @@
 .dangerBtn:hover:not(:disabled) { 
   background: #a00a23;
   border-color: #a00a23;
-  box-shadow: 0 4px 12px rgba(200, 16, 46, 0.3);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
 .dangerBtn:disabled { 
   opacity: 0.5;
@@ -345,8 +345,8 @@
 
 /* Danger zone */
 .dangerZone {
-  background: rgba(200, 16, 46, 0.05);
-  border: 2px solid #C8102E;
+  background: rgba(139, 92, 246, 0.05);
+  border: 2px solid #8B5CF6;
   border-radius: var(--radius);
   padding: 20px;
   margin-top: 16px;
@@ -354,7 +354,7 @@
 .dangerZoneTitle {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 1.2rem;
-  color: #C8102E;
+  color: #8B5CF6;
   margin-bottom: 4px;
   letter-spacing: 0.5px;
 }
@@ -391,4 +391,5 @@
     margin-top: 12px;
   }
 }
+
 

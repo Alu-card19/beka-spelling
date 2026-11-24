@@ -1,8 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
 
-const ADMIN_PASSWORD = 'sow2025'
-const SESSION_KEY    = 'sow-admin'
+const ADMIN_PASSWORD = 'beka2025'
+const SESSION_KEY    = 'beka-admin'
 
 export function useAdminAuth() {
   const [authed,   setAuthed]  = useState(false)

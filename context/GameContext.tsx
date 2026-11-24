@@ -24,11 +24,11 @@ export interface LastAward {
 }
 
 const defaultGame: GameState = {
-  section: 'Little Sprouts',
+  section: 'Buzzing Buds',
   round: 'round1',
   pointsPerQ: 10,
   teams: [
-    { name: 'Team Red',  color: '#C8102E' },
+    { name: 'Team Purple',  color: '#8B5CF6' },
     { name: 'Team Blue', color: '#003580' },
     { name: 'Team Gold', color: '#B8860B' },
   ],
@@ -61,7 +61,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // Initialize from localStorage on mount
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const saved = localStorage.getItem('sow_game_state')
+    const saved = localStorage.getItem('beka_game_state')
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
@@ -76,12 +76,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // Save game state to localStorage whenever it changes
   useEffect(() => {
     if (!hydrated || typeof window === 'undefined') return
-    localStorage.setItem('sow_game_state', JSON.stringify(game))
+    localStorage.setItem('beka_game_state', JSON.stringify(game))
   }, [game, hydrated])
 
   const clearSavedGame = () => {
     if (typeof window === 'undefined') return
-    localStorage.removeItem('sow_game_state')
+    localStorage.removeItem('beka_game_state')
     localStorage.removeItem('gauntlet_stage_pool')
   }
 
